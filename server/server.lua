@@ -12,17 +12,13 @@ local function GenerateDailyPrices()
     end
 
     print("^2[PawnShop] Daily prices generated.^7")
-
-    -- Sync to all players
     TriggerClientEvent('pawnshop:setPrices', -1, DailyPrices)
 end
 
--- Generate prices on resource start
 CreateThread(function()
     GenerateDailyPrices()
 end)
 
--- Sync prices to joining players
 AddEventHandler('playerJoining', function()
     local src = source
     TriggerClientEvent('pawnshop:setPrices', src, DailyPrices)
@@ -40,7 +36,7 @@ RegisterNetEvent('pawnshop:sellItem', function(item)
     if inv:Search(src, 'count', item) > 0 then
         inv:RemoveItem(src, item, 1)
 
-        -- Deposit into bank using okokBanking
+        -- okokBanking deposit
         exports['okokBanking']:AddMoney(src, price)
 
         TriggerClientEvent('ox_lib:notify', src, {
@@ -49,9 +45,12 @@ RegisterNetEvent('pawnshop:sellItem', function(item)
             type = 'success'
         })
 
-        -- Police alert
+        -- Random police alert chance
         if price >= Config.AlertValue then
-            TriggerEvent('pawnshop:policeAlert', src, item, price)
+            local roll = math.random(1, 100)
+            if roll <= Config.AlertChance then
+                TriggerEvent('pawnshop:policeAlert', src, item, price)
+            end
         end
     else
         TriggerClientEvent('ox_lib:notify', src, {
@@ -62,23 +61,22 @@ RegisterNetEvent('pawnshop:sellItem', function(item)
     end
 end)
 
--- POLICE ALERT
+-- FD_DISPATCH POLICE ALERT
 RegisterNetEvent('pawnshop:policeAlert', function(src, item, price)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
 
     local coords = GetEntityCoords(GetPlayerPed(src))
 
-    for _, v in pairs(QBCore.Functions.GetQBPlayers()) do
-        if v.PlayerData.job.name == 'police' and v.PlayerData.job.onduty then
-            TriggerClientEvent('ox_lib:notify', v.PlayerData.source, {
-                title = 'Suspicious Pawn Sale',
-                description = Player.PlayerData.charinfo.firstname ..
-                    " sold a high‑value item (" .. item .. ") worth $" .. price,
-                type = 'warning'
-            })
-
-            TriggerClientEvent('qb-police:client:policeAlert', v.PlayerData.source, coords)
-        end
-    end
+    TriggerEvent('fd_dispatch:server:notify', {
+        code = '10-90',
+        title = 'Suspicious Pawn Activity',
+        description = Player.PlayerData.charinfo.firstname ..
+            " sold a high‑value item (" .. item .. ") worth $" .. price,
+        coords = coords,
+        sprite = 431,
+        color = 1,
+        scale = 1.0,
+        priority = 2
+    })
 end)
