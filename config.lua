@@ -1,5 +1,9 @@
 Config = {}
 
+-- Chance (0–100) that a high‑value sale triggers a police alert
+Config.AlertChance = 15 -- 15% chance
+
+
 Config.PawnShop = {
     coords = vector3(410.965, 318.051, 107.567),
     ped = 'cs_bankman',
